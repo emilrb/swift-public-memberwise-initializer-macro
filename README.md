@@ -51,7 +51,7 @@ To include this macro in your project, add the following dependency to your `Pac
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/your-repo/PublicMemberwiseInitializer.git", from: "1.0.0")
+    .package(url: "https://github.com/emilrb/swift-public-memberwise-initializer-macro.git", from: "1.0.0")
 ]
 ```
 
