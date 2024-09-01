@@ -7,6 +7,7 @@ import SwiftSyntaxMacros
 public struct PublicMemberwiseInitializerMacro: MemberMacro {
     enum PublicMemberwiseInitializerMacroError: Error {
         case unsupportedType
+        case unsupportedVarTypeSyntax
         case missingTypeAnnotation
     }
     public static func expansion(
@@ -18,14 +19,14 @@ public struct PublicMemberwiseInitializerMacro: MemberMacro {
             }
             let variableDeclarations = declaration.memberBlock.members.compactMap({ $0.decl.as(VariableDeclSyntax.self) })
             let rows = try variableDeclarations.flatMap { declaration in
-                try (declaration.bindings.as(PatternBindingListSyntax.self)?.compactMap { patternBinding -> (IdentifierPatternSyntax, IdentifierTypeSyntax?)? in
+                try (declaration.bindings.as(PatternBindingListSyntax.self)?.compactMap { patternBinding -> (IdentifierPatternSyntax, TypeSyntaxProtocol?)? in
                             guard patternBinding.accessorBlock == nil && patternBinding.initializer == nil else {
                                 return nil // Ignore computed properties
                             }
 
                             if let identifier = patternBinding.pattern.as(IdentifierPatternSyntax.self) {
                                 // Get the type, if available
-                                let typeAnnotation = patternBinding.typeAnnotation?.type.as(IdentifierTypeSyntax.self)
+                                let typeAnnotation: TypeSyntaxProtocol? = patternBinding.typeAnnotation?.type.as(IdentifierTypeSyntax.self) ?? patternBinding.typeAnnotation?.type.as(OptionalTypeSyntax.self)
                                 return (identifier, typeAnnotation)
                             }
                             return nil
@@ -33,7 +34,7 @@ public struct PublicMemberwiseInitializerMacro: MemberMacro {
                     )
                     .reversed()
                     // Backfill any ommited types
-                    .reduce([(IdentifierPatternSyntax, IdentifierTypeSyntax)]()) { partialResult, identifierAndTypeAnnotation in
+                    .reduce([(IdentifierPatternSyntax, TypeSyntaxProtocol)]()) { partialResult, identifierAndTypeAnnotation in
                         var partialResult = partialResult
                         guard let typeAnnotation = identifierAndTypeAnnotation.1 ?? partialResult.last?.1 else {
                             throw PublicMemberwiseInitializerMacroError.missingTypeAnnotation
@@ -51,8 +52,17 @@ public struct PublicMemberwiseInitializerMacro: MemberMacro {
                     """
                 ]
             }
-            let initParams = rows.map { (identifier, type) in
-                "\(identifier.identifier.text): \(type.name)"
+            let initParams = try rows.map { (identifier, type) in
+                let typeString: String
+                if let identifierType = type.as(IdentifierTypeSyntax.self)?.name {
+                    typeString = identifierType.text
+                } else if let optionalTypeSyntax = type.as(OptionalTypeSyntax.self),
+                          let identifierType = optionalTypeSyntax.wrappedType.as(IdentifierTypeSyntax.self)?.name {
+                    typeString = "\(identifierType.text)?"
+                } else {
+                    throw PublicMemberwiseInitializerMacroError.unsupportedVarTypeSyntax
+                }
+                return "\(identifier.identifier.text): \(typeString)"
             }
             .joined(separator: ",\n")
             let initAssignments = rows.map { (identifier, type) in

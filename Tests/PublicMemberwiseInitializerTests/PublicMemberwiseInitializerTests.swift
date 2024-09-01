@@ -21,7 +21,9 @@ final class PublicMemberwiseInitializerTests: XCTestCase {
             @PublicMemberwiseInitializerMacro
             public struct MyStruct {
                 let myCoolString: String
+                let myOptionalString: String?
                 let someInt: Int, anotherInt: Int
+                let aOptional: Int?, anotherOptional: String?
                 let a, b: String, c, d: Int
                 let e = "String"
                 let f: Int
@@ -30,15 +32,20 @@ final class PublicMemberwiseInitializerTests: XCTestCase {
             expandedSource: """
             public struct MyStruct {
                 let myCoolString: String
+                let myOptionalString: String?
                 let someInt: Int, anotherInt: Int
+                let aOptional: Int?, anotherOptional: String?
                 let a, b: String, c, d: Int
                 let e = "String"
                 let f: Int
 
                 public init(
                     myCoolString: String,
+                    myOptionalString: String?,
                     someInt: Int,
                     anotherInt: Int,
+                    aOptional: Int?,
+                    anotherOptional: String?,
                     a: String,
                     b: String,
                     c: Int,
@@ -46,8 +53,11 @@ final class PublicMemberwiseInitializerTests: XCTestCase {
                     f: Int
                 ) {
                     self.myCoolString = myCoolString
+                    self.myOptionalString = myOptionalString
                     self.someInt = someInt
                     self.anotherInt = anotherInt
+                    self.aOptional = aOptional
+                    self.anotherOptional = anotherOptional
                     self.a = a
                     self.b = b
                     self.c = c
