@@ -18,7 +18,7 @@ public struct PublicMemberwiseInitializerMacro: MemberMacro {
             }
             let variableDeclarations = declaration.memberBlock.members.compactMap({ $0.decl.as(VariableDeclSyntax.self) })
             let rows = try variableDeclarations.flatMap { declaration in
-                try (declaration.bindings.as(PatternBindingListSyntax.self)?.compactMap { patternBinding -> (IdentifierPatternSyntax, TypeSyntax?)? in
+                try (declaration.bindings.compactMap { patternBinding -> (IdentifierPatternSyntax, TypeSyntax?)? in
                             guard patternBinding.accessorBlock == nil && patternBinding.initializer == nil else {
                                 return nil // Ignore computed properties
                             }
@@ -27,7 +27,7 @@ public struct PublicMemberwiseInitializerMacro: MemberMacro {
                                 return (identifier, patternBinding.typeAnnotation?.type)
                             }
                             return nil
-                        } ?? []
+                        }
                     )
                     .reversed()
                     // Backfill any ommited types
